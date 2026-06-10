@@ -87,6 +87,46 @@ const player = {
 
 const questions = [
 {
+question:"¿En qué guerra ayudó Alan Turing?",
+answers:[
+"Primera Guerra Mundial",
+"Segunda Guerra Mundial",
+"Guerra Fría",
+"Guerra Civil"
+],
+correct:1
+},
+{
+question:"¿Qué buscaba probar el Test de Turing?",
+answers:[
+"Si una máquina parece humana",
+"Velocidad de internet",
+"Seguridad informática",
+"Temperatura de computadoras"
+],
+correct:0
+},
+{
+question:"¿Qué hacía Enigma?",
+answers:[
+"Cifraba mensajes",
+"Creaba videojuegos",
+"Tomaba fotos",
+"Hacía llamadas"
+],
+correct:0
+},
+{
+question:"¿Qué usa la IA para aprender?",
+answers:[
+"Datos",
+"Gasolina",
+"Electricidad solar",
+"Plástico"
+],
+correct:0
+},
+{
 question:"¿Quién creó la máquina de Turing?",
 answers:["Albert Einstein","Alan Turing","Isaac Newton","Nikola Tesla"],
 correct:1
@@ -207,8 +247,7 @@ function nextQuestion(){
         return;
     }
 
-    currentQuestion =
-    Math.floor(Math.random() * questions.length);
+    currentQuestion++;
 
     setupQuestion();
 
