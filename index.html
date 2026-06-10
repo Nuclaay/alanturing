@@ -4,90 +4,53 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Turing Shooter - Enigma & IA</title>
+<title>Turing Escape</title>
 
 <style>
 body{
     margin:0;
     overflow:hidden;
-    background:black;
-    color:#00ff00;
-    font-family:Courier New, monospace;
+    background:#111;
+    font-family:Arial,sans-serif;
 }
 
 canvas{
     display:block;
-    background:
-    radial-gradient(circle at center, #111 0%, #000 80%);
+    background:#222;
 }
 
 #hud{
     position:absolute;
     top:10px;
     left:10px;
-    font-size:20px;
-    z-index:2;
+    color:white;
+    font-size:22px;
+    z-index:10;
 }
 
-#questionBox{
+#message{
     position:absolute;
     top:50%;
     left:50%;
     transform:translate(-50%,-50%);
-    background:black;
-    border:3px solid #00ff00;
-    padding:20px;
-    display:none;
-    width:400px;
-    z-index:3;
-}
-
-button{
-    background:#111;
-    color:#00ff00;
-    border:2px solid #00ff00;
-    padding:10px;
-    margin:5px;
-    cursor:pointer;
-    width:100%;
-}
-
-button:hover{
-    background:#00ff00;
-    color:black;
-}
-
-#gameOver{
-    position:absolute;
-    top:50%;
-    left:50%;
-    transform:translate(-50%,-50%);
-    display:none;
-    color:red;
-    font-size:50px;
+    color:white;
+    font-size:40px;
     text-align:center;
+    display:none;
 }
 </style>
 </head>
-
 <body>
 
 <div id="hud">
-    Puntos: <span id="score">0</span>
-    | Vida: <span id="life">100</span>
+Vida: <span id="life">100</span>
+<br>
+Nivel: <span id="level">1</span>
+<br>
+Puntos: <span id="score">0</span>
 </div>
 
-<div id="questionBox">
-    <h2>PREGUNTA DE CÓDIGO</h2>
-    <p id="questionText"></p>
-    <div id="answers"></div>
-</div>
-
-<div id="gameOver">
-    GAME OVER
-    <br>
-    <button onclick="location.reload()">Reiniciar</button>
-</div>
+<div id="message"></div>
 
 <canvas id="game"></canvas>
 
@@ -98,217 +61,281 @@ const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-let score = 0;
-let life = 100;
-let gameRunning = true;
-
-const scoreText = document.getElementById("score");
 const lifeText = document.getElementById("life");
+const levelText = document.getElementById("level");
+const scoreText = document.getElementById("score");
+const message = document.getElementById("message");
+
+let keys = {};
+let bullets = [];
+let gameOver = false;
+
+let score = 0;
+let level = 1;
+const maxLevel = 10;
 
 const player = {
     x: canvas.width/2,
-    y: canvas.height-100,
-    size: 30,
-    speed: 5
+    y: canvas.height - 120,
+    size: 35,
+    speed: 5,
+    life: 100
 };
 
-const keys = {};
-const bullets = [];
-const enemies = [];
+const questions = [
+{
+question:"¿Quién creó la máquina de Turing?",
+answers:["Albert Einstein","Alan Turing","Isaac Newton","Nikola Tesla"],
+correct:1
+},
+{
+question:"¿Qué máquina ayudó a descifrar Turing?",
+answers:["Windows","Enigma","Google","Linux"],
+correct:1
+},
+{
+question:"¿Qué significa IA?",
+answers:["Internet Artificial","Información Automática","Inteligencia Artificial","Inteligencia Avanzada"],
+correct:2
+},
+{
+question:"¿La máquina de Turing aprendía sola?",
+answers:["Sí","No","A veces","Solo con internet"],
+correct:1
+},
+{
+question:"¿Qué hacía Enigma?",
+answers:["Cifraba mensajes","Tomaba fotos","Hacía música","Construía robots"],
+correct:0
+}
+];
+
+let currentQuestion = 0;
+let options = [];
+
+function setupQuestion(){
+
+    const q = questions[currentQuestion];
+
+    options = [];
+
+    const width = canvas.width / 4;
+
+    for(let i=0;i<4;i++){
+
+        options.push({
+            x: i*width + 20,
+            y: 130,
+            width: width - 40,
+            height: 100,
+            text: q.answers[i],
+            correct: i === q.correct
+        });
+    }
+
+    bullets = [];
+}
+
+setupQuestion();
 
 document.addEventListener("keydown", e=>{
     keys[e.key.toLowerCase()] = true;
-
-    if(e.code === "Space"){
-        bullets.push({
-            x: player.x,
-            y: player.y,
-            size: 6
-        });
-    }
 });
 
 document.addEventListener("keyup", e=>{
     keys[e.key.toLowerCase()] = false;
 });
 
-function spawnEnemy(){
-    enemies.push({
+function spawnBullet(){
+
+    bullets.push({
         x: Math.random()*canvas.width,
-        y: -20,
-        size: 25,
-        speed: 2 + Math.random()*2
+        y: -10,
+        size: 15,
+        speed: 3 + level * 0.5
     });
 }
 
 setInterval(()=>{
-    if(gameRunning) spawnEnemy();
-},1000);
+    if(!gameOver){
+        spawnBullet();
+    }
+},700 - (level*40));
 
-function movePlayer(){
+let lavaHeight = 0;
+
+function update(){
+
+    if(gameOver) return;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+
+    // Movimiento
     if(keys["w"] || keys["arrowup"]) player.y -= player.speed;
     if(keys["s"] || keys["arrowdown"]) player.y += player.speed;
     if(keys["a"] || keys["arrowleft"]) player.x -= player.speed;
     if(keys["d"] || keys["arrowright"]) player.x += player.speed;
 
-    player.x = Math.max(0, Math.min(canvas.width, player.x));
-    player.y = Math.max(0, Math.min(canvas.height, player.y));
-}
+    player.x = Math.max(0, Math.min(canvas.width-player.size, player.x));
+    player.y = Math.max(0, Math.min(canvas.height-player.size, player.y));
 
-const questions = [
-{
-q:"¿Quién creó la máquina de Turing?",
-a:["Alan Turing","Einstein","Tesla"],
-correct:0
-},
-{
-q:"¿Qué máquina ayudó a descifrar Turing?",
-a:["Enigma","Windows","Google"],
-correct:0
-},
-{
-q:"¿Qué significa IA?",
-a:["Inteligencia Artificial","Internet Avanzado","Información Automática"],
-correct:0
-},
-{
-q:"¿La máquina de Turing aprendía sola?",
-a:["No","Sí","A veces"],
-correct:0
-},
-{
-q:"¿Qué hacía Enigma?",
-a:["Cifraba mensajes","Tomaba fotos","Hacía música"],
-correct:0
-}
-];
+    // Lava
+    lavaHeight += 0.15 + (level * 0.04);
 
-function askQuestion(){
-    gameRunning = false;
+    ctx.fillStyle = "red";
+    ctx.fillRect(
+        0,
+        canvas.height - lavaHeight,
+        canvas.width,
+        lavaHeight
+    );
 
-    const q = questions[Math.floor(Math.random()*questions.length)];
-
-    document.getElementById("questionText").textContent = q.q;
-
-    const answersDiv = document.getElementById("answers");
-    answersDiv.innerHTML = "";
-
-    q.a.forEach((ans,index)=>{
-        const btn = document.createElement("button");
-        btn.textContent = ans;
-
-        btn.onclick = ()=>{
-            if(index === q.correct){
-                score += 20;
-                alert("¡Correcto! +20 puntos");
-            }else{
-                life -= 20;
-                alert("Incorrecto -20 vida");
-            }
-
-            scoreText.textContent = score;
-            lifeText.textContent = life;
-
-            document.getElementById("questionBox").style.display = "none";
-            gameRunning = true;
-        };
-
-        answersDiv.appendChild(btn);
-    });
-
-    document.getElementById("questionBox").style.display = "block";
-}
-
-function update(){
-
-    if(!gameRunning){
-        requestAnimationFrame(update);
-        return;
+    if(player.y + player.size > canvas.height - lavaHeight){
+        player.life -= 0.5;
     }
 
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // Pregunta
+    ctx.fillStyle = "white";
+    ctx.font = "28px Arial";
+    ctx.fillText(
+        questions[currentQuestion].question,
+        40,
+        60
+    );
 
-    movePlayer();
+    // Opciones
+    options.forEach(option=>{
 
-    // jugador
-    ctx.fillStyle="#00ff00";
+        ctx.fillStyle = option.correct ? "#333" : "#444";
+
+        ctx.fillRect(
+            option.x,
+            option.y,
+            option.width,
+            option.height
+        );
+
+        ctx.fillStyle = "white";
+        ctx.font = "20px Arial";
+
+        ctx.fillText(
+            option.text,
+            option.x + 15,
+            option.y + 55
+        );
+
+        // detectar elección
+        if(
+            player.x < option.x + option.width &&
+            player.x + player.size > option.x &&
+            player.y < option.y + option.height &&
+            player.y + player.size > option.y
+        ){
+
+            if(option.correct){
+
+                score += 100;
+                level++;
+
+                lavaHeight = 0;
+
+                if(level > maxLevel){
+                    winGame();
+                    return;
+                }
+
+                currentQuestion =
+                Math.floor(Math.random()*questions.length);
+
+                setupQuestion();
+
+            }else{
+                player.life -= 15;
+            }
+        }
+    });
+
+    // Balas
+    bullets.forEach((bullet,index)=>{
+
+        bullet.y += bullet.speed;
+
+        ctx.fillStyle = "yellow";
+        ctx.beginPath();
+        ctx.arc(
+            bullet.x,
+            bullet.y,
+            bullet.size,
+            0,
+            Math.PI*2
+        );
+        ctx.fill();
+
+        const hit =
+        player.x < bullet.x + bullet.size &&
+        player.x + player.size > bullet.x &&
+        player.y < bullet.y + bullet.size &&
+        player.y + player.size > bullet.y;
+
+        if(hit){
+            player.life -= 10;
+            bullets.splice(index,1);
+        }
+
+        if(bullet.y > canvas.height){
+            bullets.splice(index,1);
+        }
+    });
+
+    // Jugador
+    ctx.fillStyle = "cyan";
     ctx.fillRect(
-        player.x-player.size/2,
-        player.y-player.size/2,
+        player.x,
+        player.y,
         player.size,
         player.size
     );
 
-    // balas
-    for(let i=bullets.length-1;i>=0;i--){
-        bullets[i].y -= 8;
+    // HUD
+    lifeText.textContent = Math.max(0, Math.floor(player.life));
+    levelText.textContent = level;
+    scoreText.textContent = score;
 
-        ctx.fillStyle="yellow";
-        ctx.fillRect(
-            bullets[i].x,
-            bullets[i].y,
-            bullets[i].size,
-            bullets[i].size
-        );
-
-        if(bullets[i].y<0){
-            bullets.splice(i,1);
-        }
-    }
-
-    // enemigos
-    for(let i=enemies.length-1;i>=0;i--){
-
-        enemies[i].y += enemies[i].speed;
-
-        ctx.fillStyle="red";
-        ctx.fillRect(
-            enemies[i].x,
-            enemies[i].y,
-            enemies[i].size,
-            enemies[i].size
-        );
-
-        // colision bala
-        for(let j=bullets.length-1;j>=0;j--){
-
-            let dx = bullets[j].x - enemies[i].x;
-            let dy = bullets[j].y - enemies[i].y;
-            let dist = Math.sqrt(dx*dx + dy*dy);
-
-            if(dist < 25){
-                enemies.splice(i,1);
-                bullets.splice(j,1);
-
-                score += 10;
-                scoreText.textContent = score;
-
-                if(score % 50 === 0){
-                    askQuestion();
-                }
-
-                break;
-            }
-        }
-
-        // enemigo toca jugador
-        let dx = player.x - enemies[i].x;
-        let dy = player.y - enemies[i].y;
-        let dist = Math.sqrt(dx*dx + dy*dy);
-
-        if(dist < 35){
-            enemies.splice(i,1);
-            life -= 10;
-            lifeText.textContent = life;
-        }
-    }
-
-    if(life <= 0){
-        gameRunning = false;
-        document.getElementById("gameOver").style.display="block";
+    if(player.life <= 0){
+        endGame();
+        return;
     }
 
     requestAnimationFrame(update);
+}
+
+function endGame(){
+
+    gameOver = true;
+
+    message.style.display = "block";
+    message.innerHTML = `
+    GAME OVER<br>
+    Puntos: ${score}<br><br>
+    <button onclick="location.reload()">
+    Reiniciar
+    </button>
+    `;
+}
+
+function winGame(){
+
+    gameOver = true;
+
+    message.style.display = "block";
+    message.innerHTML = `
+    ¡GANASTE!<br>
+    Superaste todos los niveles<br>
+    Puntos: ${score}<br><br>
+    <button onclick="location.reload()">
+    Jugar otra vez
+    </button>
+    `;
 }
 
 update();
