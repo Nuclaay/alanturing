@@ -34,19 +34,20 @@ canvas{
     left:50%;
     transform:translate(-50%,-50%);
     color:white;
-    font-size:40px;
+    font-size:35px;
     text-align:center;
     display:none;
+    background:rgba(0,0,0,0.8);
+    padding:20px;
+    border-radius:10px;
 }
 </style>
 </head>
 <body>
 
 <div id="hud">
-Vida: <span id="life">100</span>
-<br>
-Nivel: <span id="level">1</span>
-<br>
+Vida: <span id="life">100</span><br>
+Nivel: <span id="level">1</span><br>
 Puntos: <span id="score">0</span>
 </div>
 
@@ -69,14 +70,16 @@ const message = document.getElementById("message");
 let keys = {};
 let bullets = [];
 let gameOver = false;
+let waitingNextQuestion = false;
+let wrongAnswerCooldown = false;
 
 let score = 0;
 let level = 1;
 const maxLevel = 10;
 
 const player = {
-    x: canvas.width/2,
-    y: canvas.height - 120,
+    x: canvas.width / 2,
+    y: canvas.height - 150,
     size: 35,
     speed: 5,
     life: 100
@@ -107,24 +110,29 @@ correct:1
 question:"¿Qué hacía Enigma?",
 answers:["Cifraba mensajes","Tomaba fotos","Hacía música","Construía robots"],
 correct:0
+},
+{
+question:"¿Qué propuso Alan Turing?",
+answers:["El Test de Turing","Facebook","WiFi","GPS"],
+correct:0
 }
 ];
 
 let currentQuestion = 0;
 let options = [];
+let lavaHeight = 0;
 
 function setupQuestion(){
 
     const q = questions[currentQuestion];
-
     options = [];
 
     const width = canvas.width / 4;
 
-    for(let i=0;i<4;i++){
+    for(let i = 0; i < 4; i++){
 
         options.push({
-            x: i*width + 20,
+            x: i * width + 20,
             y: 130,
             width: width - 40,
             height: 100,
@@ -149,20 +157,50 @@ document.addEventListener("keyup", e=>{
 function spawnBullet(){
 
     bullets.push({
-        x: Math.random()*canvas.width,
-        y: -10,
-        size: 15,
-        speed: 3 + level * 0.5
+        x: Math.random() * canvas.width,
+        y: -20,
+        size: 12,
+        speed: 8 + level * 1.2
     });
 }
 
 setInterval(()=>{
-    if(!gameOver){
+
+    if(!gameOver && !waitingNextQuestion){
         spawnBullet();
     }
-},700 - (level*40));
 
-let lavaHeight = 0;
+}, Math.max(250, 700 - level * 40));
+
+function movePlayer(){
+
+    if(keys["w"] || keys["arrowup"]) player.y -= player.speed;
+    if(keys["s"] || keys["arrowdown"]) player.y += player.speed;
+    if(keys["a"] || keys["arrowleft"]) player.x -= player.speed;
+    if(keys["d"] || keys["arrowright"]) player.x += player.speed;
+
+    player.x = Math.max(0, Math.min(canvas.width - player.size, player.x));
+    player.y = Math.max(0, Math.min(canvas.height - player.size, player.y));
+}
+
+function nextQuestion(){
+
+    level++;
+    lavaHeight = 0;
+
+    if(level > maxLevel){
+        winGame();
+        return;
+    }
+
+    currentQuestion =
+    Math.floor(Math.random() * questions.length);
+
+    setupQuestion();
+
+    waitingNextQuestion = false;
+    message.style.display = "none";
+}
 
 function update(){
 
@@ -170,17 +208,12 @@ function update(){
 
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
-    // Movimiento
-    if(keys["w"] || keys["arrowup"]) player.y -= player.speed;
-    if(keys["s"] || keys["arrowdown"]) player.y += player.speed;
-    if(keys["a"] || keys["arrowleft"]) player.x -= player.speed;
-    if(keys["d"] || keys["arrowright"]) player.x += player.speed;
-
-    player.x = Math.max(0, Math.min(canvas.width-player.size, player.x));
-    player.y = Math.max(0, Math.min(canvas.height-player.size, player.y));
+    movePlayer();
 
     // Lava
-    lavaHeight += 0.15 + (level * 0.04);
+    if(!waitingNextQuestion){
+        lavaHeight += 0.15 + (level * 0.04);
+    }
 
     ctx.fillStyle = "red";
     ctx.fillRect(
@@ -190,8 +223,10 @@ function update(){
         lavaHeight
     );
 
-    if(player.y + player.size > canvas.height - lavaHeight){
-        player.life -= 0.5;
+    if(player.y + player.size >
+       canvas.height - lavaHeight){
+
+        player.life -= 0.3;
     }
 
     // Pregunta
@@ -206,7 +241,8 @@ function update(){
     // Opciones
     options.forEach(option=>{
 
-        ctx.fillStyle = option.correct ? "#333" : "#444";
+        // TODAS iguales (sin marcar correcta)
+        ctx.fillStyle = "#444";
 
         ctx.fillRect(
             option.x,
@@ -216,41 +252,47 @@ function update(){
         );
 
         ctx.fillStyle = "white";
-        ctx.font = "20px Arial";
+        ctx.font = "18px Arial";
 
         ctx.fillText(
             option.text,
-            option.x + 15,
+            option.x + 10,
             option.y + 55
         );
 
-        // detectar elección
+        const touching =
+        player.x < option.x + option.width &&
+        player.x + player.size > option.x &&
+        player.y < option.y + option.height &&
+        player.y + player.size > option.y;
+
         if(
-            player.x < option.x + option.width &&
-            player.x + player.size > option.x &&
-            player.y < option.y + option.height &&
-            player.y + player.size > option.y
+            touching &&
+            !waitingNextQuestion
         ){
 
             if(option.correct){
 
+                waitingNextQuestion = true;
                 score += 100;
-                level++;
 
-                lavaHeight = 0;
+                message.style.display = "block";
+                message.innerHTML =
+                "✅ CORRECTO<br><br>" +
+                "Siguiente pregunta en 5 segundos";
 
-                if(level > maxLevel){
-                    winGame();
-                    return;
-                }
+                setTimeout(()=>{
+                    nextQuestion();
+                },5000);
 
-                currentQuestion =
-                Math.floor(Math.random()*questions.length);
+            }else if(!wrongAnswerCooldown){
 
-                setupQuestion();
+                wrongAnswerCooldown = true;
+                player.life -= 20;
 
-            }else{
-                player.life -= 15;
+                setTimeout(()=>{
+                    wrongAnswerCooldown = false;
+                },1200);
             }
         }
     });
@@ -267,7 +309,7 @@ function update(){
             bullet.y,
             bullet.size,
             0,
-            Math.PI*2
+            Math.PI * 2
         );
         ctx.fill();
 
@@ -278,7 +320,8 @@ function update(){
         player.y + player.size > bullet.y;
 
         if(hit){
-            player.life -= 10;
+
+            player.life -= 40;
             bullets.splice(index,1);
         }
 
@@ -297,7 +340,9 @@ function update(){
     );
 
     // HUD
-    lifeText.textContent = Math.max(0, Math.floor(player.life));
+    lifeText.textContent =
+    Math.max(0, Math.floor(player.life));
+
     levelText.textContent = level;
     scoreText.textContent = score;
 
@@ -315,8 +360,9 @@ function endGame(){
 
     message.style.display = "block";
     message.innerHTML = `
-    GAME OVER<br>
-    Puntos: ${score}<br><br>
+    💀 GAME OVER<br><br>
+    Puntos: ${score}<br>
+    Nivel alcanzado: ${level}<br><br>
     <button onclick="location.reload()">
     Reiniciar
     </button>
@@ -329,7 +375,7 @@ function winGame(){
 
     message.style.display = "block";
     message.innerHTML = `
-    ¡GANASTE!<br>
+    🏆 ¡GANASTE!<br><br>
     Superaste todos los niveles<br>
     Puntos: ${score}<br><br>
     <button onclick="location.reload()">
