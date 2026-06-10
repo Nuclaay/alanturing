@@ -230,8 +230,8 @@ setInterval(()=>{
 
 }, Math.max(150, 450 - level * 25));
 
+function spawnShield(){
 function movePlayer(){
-    function spawnShield(){ 
         shield = { 
         x: player.x + (Math.random()*200 - 100),
         y: player.y + (Math.random()*150 - 75),
@@ -300,13 +300,13 @@ function update(){
         lavaHeight
     );
 
-    if(player.y + player.size >
-       canvas.height - lavaHeight){
+if(player.y + player.size >
+   canvas.height - lavaHeight){
 
-if(!invincible){
-    player.life -= 0.3; 
+    if(!invincible){
+        player.life -= 0.3;
+    }
 }
-
     // Pregunta
 ctx.fillStyle = "white";
 ctx.font = "30px Arial";
@@ -416,7 +416,6 @@ ctx.textAlign = "left";
         }
     });
 // Escudo
-
 if(shield){
 
 
