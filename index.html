@@ -72,6 +72,8 @@ let bullets = [];
 let gameOver = false;
 let waitingNextQuestion = false;
 let wrongAnswerCooldown = false;
+let shield = null;
+let invincible = false;
 
 let score = 0;
 let level = 1;
@@ -229,6 +231,23 @@ setInterval(()=>{
 }, Math.max(150, 450 - level * 25));
 
 function movePlayer(){
+    function spawnShield(){ 
+        shield = { 
+        x: player.x + (Math.random()*200 - 100),
+        y: player.y + (Math.random()*150 - 75),
+        size: 20 
+    }; 
+        
+        // evitar que aparezca fuera del mapa
+        shield.x = Math.max(
+            30,
+            Math.min(canvas.width - 30, shield.x)
+        ); 
+        shield.y = Math.max(
+            120,
+            Math.min(canvas.height - 100, shield.y)
+        ); 
+    }
 
     if(keys["w"] || keys["arrowup"]) player.y -= player.speed;
     if(keys["s"] || keys["arrowdown"]) player.y += player.speed;
@@ -252,6 +271,9 @@ function nextQuestion(){
     currentQuestion++;
 
     setupQuestion();
+    if(level % 3 === 0){
+        spawnShield(); 
+    }
 
     waitingNextQuestion = false;
     message.style.display = "none";
@@ -281,8 +303,9 @@ function update(){
     if(player.y + player.size >
        canvas.height - lavaHeight){
 
-        player.life -= 0.3;
-    }
+if(!invincible){
+    player.life -= 0.3; 
+}
 
     // Pregunta
 ctx.fillStyle = "white";
@@ -347,7 +370,9 @@ ctx.textAlign = "left";
             }else if(!wrongAnswerCooldown){
 
                 wrongAnswerCooldown = true;
-                player.life -= 20;
+                if(!invincible){
+                    player.life -= 20; 
+                }
 
                 setTimeout(()=>{
                     wrongAnswerCooldown = false;
@@ -380,7 +405,9 @@ ctx.textAlign = "left";
 
         if(hit){
 
-            player.life -= 25;
+            if(!invincible){
+                player.life -= 30; 
+            }
             bullets.splice(index,1);
         }
 
@@ -388,9 +415,80 @@ ctx.textAlign = "left";
             bullets.splice(index,1);
         }
     });
+// Escudo
 
+if(shield){
+
+
+
+    ctx.fillStyle = "deepskyblue";
+
+
+
+    ctx.beginPath();
+
+    ctx.arc(
+
+        shield.x,
+
+        shield.y,
+
+        shield.size,
+
+        0,
+
+        Math.PI * 2
+
+    );
+
+    ctx.fill();
+
+
+
+    const shieldTouch =
+
+    player.x < shield.x + shield.size &&
+
+    player.x + player.size > shield.x &&
+
+    player.y < shield.y + shield.size &&
+
+    player.y + player.size > shield.y;
+
+
+
+    if(shieldTouch){
+
+
+
+        shield = null;
+
+        invincible = true;
+
+
+
+        message.style.display = "block";
+
+        message.innerHTML =
+
+        "🛡️ ESCUDO ACTIVADO<br>5 segundos";
+
+
+
+        setTimeout(()=>{
+
+            invincible = false;
+
+            message.style.display = "none";
+
+        },5000);
+
+    }
+
+}
     // Jugador
-    ctx.fillStyle = "cyan";
+    ctx.fillStyle =
+    invincible ? "gold" : "cyan";
     ctx.fillRect(
         player.x,
         player.y,
