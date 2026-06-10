@@ -231,23 +231,53 @@ setInterval(()=>{
 }, Math.max(150, 450 - level * 25));
 
 function spawnShield(){
+
+    shield = {
+        x: player.x + (Math.random() * 200 - 100),
+        y: player.y + (Math.random() * 150 - 75),
+        size: 20
+    };
+
+    // evitar salir del mapa
+    shield.x = Math.max(
+        30,
+        Math.min(canvas.width - 30, shield.x)
+    );
+
+    shield.y = Math.max(
+        120,
+        Math.min(canvas.height - 100, shield.y)
+    );
+}
+
 function movePlayer(){
-        shield = { 
-        x: player.x + (Math.random()*200 - 100),
-        y: player.y + (Math.random()*150 - 75),
-        size: 20 
-    }; 
-        
-        // evitar que aparezca fuera del mapa
-        shield.x = Math.max(
-            30,
-            Math.min(canvas.width - 30, shield.x)
-        ); 
-        shield.y = Math.max(
-            120,
-            Math.min(canvas.height - 100, shield.y)
-        ); 
+
+    if(keys["w"] || keys["arrowup"]){
+        player.y -= player.speed;
     }
+
+    if(keys["s"] || keys["arrowdown"]){
+        player.y += player.speed;
+    }
+
+    if(keys["a"] || keys["arrowleft"]){
+        player.x -= player.speed;
+    }
+
+    if(keys["d"] || keys["arrowright"]){
+        player.x += player.speed;
+    }
+
+    player.x = Math.max(
+        0,
+        Math.min(canvas.width - player.size, player.x)
+    );
+
+    player.y = Math.max(
+        0,
+        Math.min(canvas.height - player.size, player.y)
+    );
+}
 
     if(keys["w"] || keys["arrowup"]) player.y -= player.speed;
     if(keys["s"] || keys["arrowdown"]) player.y += player.speed;
