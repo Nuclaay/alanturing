@@ -77,7 +77,7 @@ let invincible = false;
 
 let score = 0;
 let level = 1;
-const maxLevel = 10;
+const maxLevel = questions.length;
 
 const player = {
     x: canvas.width / 2,
@@ -284,16 +284,20 @@ function nextQuestion(){
     level++;
     lavaHeight = 0;
 
-    if(level > maxLevel){
+    // siguiente pregunta
+    currentQuestion++;
+
+    // verificar si terminó el juego
+    if(currentQuestion >= questions.length){
         winGame();
         return;
     }
 
-    currentQuestion++;
-
     setupQuestion();
+
+    // escudo cada 3 niveles
     if(level % 3 === 0){
-        spawnShield(); 
+        spawnShield();
     }
 
     waitingNextQuestion = false;
