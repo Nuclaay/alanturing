@@ -169,6 +169,14 @@ let lavaHeight = 0;
     
 setupQuestion();
 
+document.addEventListener("keydown", (e) => {
+    keys[e.key.toLowerCase()] = true;
+});
+
+document.addEventListener("keyup", (e) => {
+    keys[e.key.toLowerCase()] = false;
+});
+
 function setupQuestion(){
 
     // seguridad para evitar errores
