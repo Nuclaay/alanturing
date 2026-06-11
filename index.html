@@ -166,6 +166,8 @@ maxLevel = questions.length;
 let currentQuestion = 0;
 let options = [];
 let lavaHeight = 0;
+    
+setupQuestion();
 
 function setupQuestion(){
 
@@ -336,11 +338,14 @@ ctx.fillStyle = "white";
 ctx.font = "30px Arial";
 ctx.textAlign = "center";
 
-ctx.fillText(
-    questions[currentQuestion].question,
-    canvas.width / 2,
-    60
-);
+if(questions[currentQuestion]){
+
+    ctx.fillText(
+        questions[currentQuestion].question,
+        canvas.width / 2,
+        60
+    );
+}
 
 ctx.textAlign = "left";
 
