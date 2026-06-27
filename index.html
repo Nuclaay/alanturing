@@ -71,12 +71,9 @@ const scoreText = document.getElementById("score");
 const message = document.getElementById("message");
 
 let keys = {};
-let bullets = [];
 let gameOver = false;
 let waitingNextQuestion = false;
 let wrongAnswerCooldown = false;
-let shield = null;
-let invincible = false;
 
 let score = 0;
 let level = 1;
@@ -168,7 +165,6 @@ maxLevel = questions.length;
 
 let currentQuestion = 0;
 let options = [];
-let lavaHeight = 0;
     
 setupQuestion();
 
@@ -209,63 +205,8 @@ function setupQuestion(){
             correct: i === q.correct
         });
     }
-
-    bullets = [];
 }
     
-function spawnBullet(){
-
-    bullets.push({
-        x: Math.random() * canvas.width,
-        y: -20,
-        size: 12,
-        speed: 8 + level * 1.2
-    });
-}
-
-setInterval(()=>{
-
-    if(!gameOver && !waitingNextQuestion){
-
-        // más proyectiles
-        spawnBullet();
-        spawnBullet();
-        spawnBullet();
-        spawnBullet();
-
-        // desde nivel 4 aparecen más
-        if(level >= 4){
-            spawnBullet();
-        }
-
-        // desde nivel 7 todavía más
-        if(level >= 7){
-            spawnBullet();
-            spawnBullet();
-        }
-    }
-
-}, Math.max(150, 450 - level * 25));
-
-function spawnShield(){
-
-    shield = {
-        x: player.x + (Math.random() * 200 - 100),
-        y: player.y + (Math.random() * 150 - 75),
-        size: 20
-    };
-
-    // evitar salir del mapa
-    shield.x = Math.max(
-        30,
-        Math.min(canvas.width - 30, shield.x)
-    );
-
-    shield.y = Math.max(
-        120,
-        Math.min(canvas.height - 100, shield.y)
-    );
-}
 
 function movePlayer(){
 
@@ -299,7 +240,6 @@ function movePlayer(){
 function nextQuestion(){
 
     level++;
-    lavaHeight = 0;
 
     // siguiente pregunta
     currentQuestion++;
@@ -312,10 +252,6 @@ function nextQuestion(){
 
     setupQuestion();
 
-    // escudo cada 3 niveles
-    if(level % 3 === 0){
-        spawnShield();
-    }
 
     waitingNextQuestion = false;
     message.style.display = "none";
@@ -329,26 +265,6 @@ function update(){
 
     movePlayer();
 
-    // Lava
-    if(!waitingNextQuestion){
-        lavaHeight += 0.55 + (level * 0.12);
-    }
-
-    ctx.fillStyle = "red";
-    ctx.fillRect(
-        0,
-        canvas.height - lavaHeight,
-        canvas.width,
-        lavaHeight
-    );
-
-if(player.y + player.size >
-   canvas.height - lavaHeight){
-
-    if(!invincible){
-        player.life -= 0.3;
-    }
-}
     // Pregunta
 ctx.fillStyle = "white";
 ctx.font = "30px Arial";
@@ -426,113 +342,9 @@ ctx.textAlign = "left";
         }
     });
 
-    // Balas
-    bullets.forEach((bullet,index)=>{
-
-        bullet.y += bullet.speed;
-
-        ctx.fillStyle = "yellow";
-        ctx.beginPath();
-        ctx.arc(
-            bullet.x,
-            bullet.y,
-            bullet.size,
-            0,
-            Math.PI * 2
-        );
-        ctx.fill();
-
-        const hit =
-        player.x < bullet.x + bullet.size &&
-        player.x + player.size > bullet.x &&
-        player.y < bullet.y + bullet.size &&
-        player.y + player.size > bullet.y;
-
-        if(hit){
-
-            if(!invincible){
-                player.life -= 30; 
-            }
-            bullets.splice(index,1);
-        }
-
-        if(bullet.y > canvas.height){
-            bullets.splice(index,1);
-        }
-    });
-// Escudo
-if(shield){
-
-
-
-    ctx.fillStyle = "deepskyblue";
-
-
-
-    ctx.beginPath();
-
-    ctx.arc(
-
-        shield.x,
-
-        shield.y,
-
-        shield.size,
-
-        0,
-
-        Math.PI * 2
-
-    );
-
-    ctx.fill();
-
-
-
-    const shieldTouch =
-
-    player.x < shield.x + shield.size &&
-
-    player.x + player.size > shield.x &&
-
-    player.y < shield.y + shield.size &&
-
-    player.y + player.size > shield.y;
-
-
-
-    if(shieldTouch){
-
-
-
-        shield = null;
-
-        invincible = true;
-
-
-
-        message.style.display = "block";
-
-        message.innerHTML =
-
-        "🛡️ ESCUDO ACTIVADO<br>5 segundos";
-
-
-
-        setTimeout(()=>{
-
-            invincible = false;
-
-            message.style.display = "none";
-
-        },5000);
-
-    }
-
-}
+  
     // Jugador
-    ctx.fillStyle =
-    invincible ? "gold" : "cyan";
+    ctx.fillStyle = "cyan";
     ctx.fillRect(
         player.x,
         player.y,
