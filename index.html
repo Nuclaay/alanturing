@@ -176,10 +176,6 @@ window.addEventListener("keyup", function(e){
     keys[e.key.toLowerCase()] = false;
 });
     
-window.addEventListener("keydown", function(e){
-    console.log(e.key);
-    keys[e.key.toLowerCase()] = true;
-});
 
 function setupQuestion(){
 
@@ -331,7 +327,6 @@ ctx.textAlign = "left";
             }else if(!wrongAnswerCooldown){
 
                 wrongAnswerCooldown = true;
-                if(!invincible){
                     player.life -= 20; 
                 }
 
